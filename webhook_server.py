@@ -8,7 +8,7 @@ import logging
 import csv
 import os
 from datetime import datetime
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
 import requests
@@ -38,7 +38,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Flask app
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='')
 
 # Initialize Binance client
 try:
@@ -297,6 +297,20 @@ def history():
         return jsonify({'error': str(e)}), 500
 
 # ============================================================================
+# FRONTEND ROUTES
+# ============================================================================
+
+@app.route('/')
+def index():
+    """Serve the main dashboard page"""
+    return send_from_directory('static', 'index.html')
+
+@app.route('/<path:path>')
+def serve_static(path):
+    """Serve static files (CSS, JS, etc.)"""
+    return send_from_directory('static', path)
+
+# ============================================================================
 # MAIN
 # ============================================================================
 
@@ -307,7 +321,9 @@ if __name__ == '__main__':
     logger.info("Starting Trading Bot Webhook Server...")
     logger.info(f"Trading Pair: {TRADING_PAIR}")
     logger.info(f"Trade Amount: {TRADE_AMOUNT}")
-    logger.info("Server will listen on http://localhost:5000/webhook")
+    logger.info("Server will listen on http://localhost:5000")
+    logger.info("Dashboard available at: http://localhost:5000/")
+    logger.info("Webhook endpoint: http://localhost:5000/webhook")
     
     # Run Flask app
     app.run(host='0.0.0.0', port=5000, debug=False)
