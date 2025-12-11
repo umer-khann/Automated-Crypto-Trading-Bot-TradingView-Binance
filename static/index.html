@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Bot Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-robot"></i> Automated Trading Bot</h1>
+                <div class="status-indicator">
+                    <span id="server-status" class="status-badge offline">
+                        <i class="fas fa-circle"></i> Checking...
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Dashboard -->
+        <main class="dashboard">
+            <!-- Stats Cards -->
+            <section class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon buy">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Total Buys</h3>
+                        <p class="stat-value" id="total-buys">0</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon sell">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Total Sells</h3>
+                        <p class="stat-value" id="total-sells">0</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Successful Trades</h3>
+                        <p class="stat-value" id="successful-trades">0</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Failed Trades</h3>
+                        <p class="stat-value" id="failed-trades">0</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Account Balance -->
+            <section class="balance-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-wallet"></i> Account Balance</h2>
+                    <button class="btn btn-primary" onclick="refreshBalance()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div class="balance-grid" id="balance-grid">
+                    <div class="balance-loading">Loading balances...</div>
+                </div>
+            </section>
+
+            <!-- Trade History -->
+            <section class="history-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-history"></i> Trade History</h2>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="refreshHistory()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportHistory()">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="trade-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Signal</th>
+                                <th>Symbol</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Order ID</th>
+                                <th>Status</th>
+                                <th>Error</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trade-history-body">
+                            <tr>
+                                <td colspan="8" class="loading">Loading trade history...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Manual Trade Test -->
+            <section class="test-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-flask"></i> Test Webhook</h2>
+                </div>
+                <div class="test-form">
+                    <div class="form-group">
+                        <label for="test-signal">Signal</label>
+                        <select id="test-signal" class="form-control">
+                            <option value="buy">Buy</option>
+                            <option value="sell">Sell</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="test-symbol">Symbol</label>
+                        <input type="text" id="test-symbol" class="form-control" value="BTCUSDT" placeholder="BTCUSDT">
+                    </div>
+                    <div class="form-group">
+                        <label for="test-price">Price</label>
+                        <input type="number" id="test-price" class="form-control" value="50000" placeholder="50000">
+                    </div>
+                    <button class="btn btn-primary" onclick="testWebhook()">
+                        <i class="fas fa-paper-plane"></i> Send Test Webhook
+                    </button>
+                </div>
+            </section>
+
+            <!-- Logs Section -->
+            <section class="logs-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-file-alt"></i> Recent Logs</h2>
+                    <button class="btn btn-secondary" onclick="toggleAutoRefresh()">
+                        <i class="fas fa-play" id="auto-refresh-icon"></i> 
+                        <span id="auto-refresh-text">Auto-refresh: OFF</span>
+                    </button>
+                </div>
+                <div class="logs-container" id="logs-container">
+                    <div class="log-entry">Waiting for logs...</div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Trading Bot Dashboard | Binance Testnet | <span id="last-update">Never updated</span></p>
+        </footer>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
