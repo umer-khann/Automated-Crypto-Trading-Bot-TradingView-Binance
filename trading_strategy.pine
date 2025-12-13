@@ -87,9 +87,17 @@ plotshape(sell_signal, style=shape.triangledown, location=location.abovebar, col
 // ============================================================================
 
 // Alert message with JSON payload
+// IMPORTANT: Fire alert when signal occurs, not just when order executes
 if (buy_signal)
     alert('{"signal": "buy", "symbol": "' + syminfo.ticker + '", "price": ' + str.tostring(close) + ', "time": "' + str.tostring(time) + '"}', alert.freq_once_per_bar)
 
 if (sell_signal)
+    alert('{"signal": "sell", "symbol": "' + syminfo.ticker + '", "price": ' + str.tostring(close) + ', "time": "' + str.tostring(time) + '"}', alert.freq_once_per_bar)
+
+// Alternative: Fire alert on bar close if signal is true (more reliable)
+if (barstate.isconfirmed and buy_signal)
+    alert('{"signal": "buy", "symbol": "' + syminfo.ticker + '", "price": ' + str.tostring(close) + ', "time": "' + str.tostring(time) + '"}', alert.freq_once_per_bar)
+
+if (barstate.isconfirmed and sell_signal)
     alert('{"signal": "sell", "symbol": "' + syminfo.ticker + '", "price": ' + str.tostring(close) + ', "time": "' + str.tostring(time) + '"}', alert.freq_once_per_bar)
 

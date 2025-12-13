@@ -6,6 +6,8 @@ const API_BASE_URL = window.location.origin; // Use same origin as frontend
 const AUTO_REFRESH_INTERVAL = 5000; // 5 seconds
 let autoRefreshEnabled = false;
 let autoRefreshInterval = null;
+let lastTradeCount = 0;
+let webhookActivity = [];
 
 // ============================================================================
 // Utility Functions
@@ -96,13 +98,27 @@ async function loadBalance() {
             return;
         }
         
-        balanceGrid.innerHTML = Object.entries(data.balances)
+        // Show only top 5 trading assets (USDT, BTC, ETH, BNB, BUSD)
+        const tradingAssets = ['USDT', 'BTC', 'ETH', 'BNB', 'BUSD'];
+        const sortedBalances = Object.entries(data.balances).filter(([asset]) => 
+            tradingAssets.includes(asset)
+        ).sort(([a], [b]) => {
+            // Sort by trading priority order
+            return tradingAssets.indexOf(a) - tradingAssets.indexOf(b);
+        });
+        
+        balanceGrid.innerHTML = sortedBalances
             .map(([asset, balance]) => `
                 <div class="balance-item">
                     <div class="asset">${asset}</div>
                     <div class="amount">${formatNumber(balance.free)}</div>
                 </div>
             `).join('');
+        
+        // Show message if no trading assets found
+        if (sortedBalances.length === 0) {
+            balanceGrid.innerHTML = '<div class="balance-loading">No trading assets found. Check your Binance Testnet account.</div>';
+        }
     } catch (error) {
         showToast('Failed to load balance: ' + error.message, 'error');
         document.getElementById('balance-grid').innerHTML = 
@@ -147,6 +163,53 @@ async function loadTradeHistory() {
     }
 }
 
+function initializeActivityMonitor(trades) {
+    const activityContainer = document.getElementById('activity-container');
+    
+    if (trades.length === 0) {
+        activityContainer.innerHTML = `
+            <div class="activity-item">
+                <div class="activity-icon info"><i class="fas fa-info-circle"></i></div>
+                <div class="activity-content">
+                    <div class="activity-title">No webhook activity yet</div>
+                    <div class="activity-time">Waiting for TradingView alerts or test webhooks...</div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Show last 10 trades in activity monitor
+    const recentTrades = trades.slice(0, 10);
+    activityContainer.innerHTML = recentTrades.map(trade => {
+        const isSuccess = trade.status === 'success';
+        const isBuy = trade.signal === 'buy';
+        
+        return `
+            <div class="activity-item">
+                <div class="activity-icon ${isSuccess ? 'success' : 'error'}">
+                    <i class="fas fa-${isBuy ? 'arrow-up' : 'arrow-down'}"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-title">
+                        ${isBuy ? 'BUY' : 'SELL'} ${trade.symbol || 'N/A'} 
+                        <span class="activity-status ${isSuccess ? 'success' : 'error'}">${trade.status}</span>
+                    </div>
+                    <div class="activity-details">
+                        Price: ${formatNumber(trade.price)} | 
+                        Quantity: ${trade.quantity || 'N/A'} | 
+                        ${trade.order_id ? `Order ID: ${trade.order_id}` : ''}
+                        ${trade.error ? `<span class="activity-error">Error: ${trade.error}</span>` : ''}
+                    </div>
+                    <div class="activity-time">${formatDate(trade.timestamp)}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    lastTradeCount = trades.length;
+}
+
 function updateStats(trades) {
     const buys = trades.filter(t => t.signal === 'buy').length;
     const sells = trades.filter(t => t.signal === 'sell').length;
@@ -157,6 +220,56 @@ function updateStats(trades) {
     document.getElementById('total-sells').textContent = sells;
     document.getElementById('successful-trades').textContent = successful;
     document.getElementById('failed-trades').textContent = failed;
+    
+    // Update Activity Monitor with existing trades
+    updateActivityMonitor(trades);
+}
+
+function updateActivityMonitor(trades) {
+    const activityContainer = document.getElementById('activity-container');
+    
+    if (!trades || trades.length === 0) {
+        activityContainer.innerHTML = `
+            <div class="activity-item">
+                <div class="activity-icon info"><i class="fas fa-info-circle"></i></div>
+                <div class="activity-content">
+                    <div class="activity-title">No webhook activity yet</div>
+                    <div class="activity-time">Waiting for TradingView alerts or test webhooks...</div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Show last 10 trades (most recent first)
+    const recentTrades = trades.slice(0, 10);
+    activityContainer.innerHTML = recentTrades.map(trade => {
+        const isSuccess = trade.status === 'success';
+        const isBuy = trade.signal === 'buy';
+        
+        return `
+            <div class="activity-item">
+                <div class="activity-icon ${isSuccess ? 'success' : 'error'}">
+                    <i class="fas fa-${isBuy ? 'arrow-up' : 'arrow-down'}"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-title">
+                        ${isBuy ? 'BUY' : 'SELL'} ${trade.symbol || 'N/A'} 
+                        <span class="activity-status ${isSuccess ? 'success' : 'error'}">${trade.status}</span>
+                    </div>
+                    <div class="activity-details">
+                        Price: ${formatNumber(trade.price)} | 
+                        Quantity: ${trade.quantity || 'N/A'} | 
+                        ${trade.order_id ? `Order ID: ${trade.order_id}` : ''}
+                        ${trade.error ? `<span class="activity-error">Error: ${trade.error}</span>` : ''}
+                    </div>
+                    <div class="activity-time">${formatDate(trade.timestamp)}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    lastTradeCount = trades.length;
 }
 
 async function testWebhook() {
@@ -237,6 +350,9 @@ function toggleAutoRefresh() {
             loadBalance();
             checkServerStatus();
         }, AUTO_REFRESH_INTERVAL);
+        
+        // Also check for new trades immediately
+        loadTradeHistory();
         showToast('Auto-refresh enabled', 'success');
     } else {
         icon.className = 'fas fa-play';

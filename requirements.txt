@@ -1,6 +1,7 @@
 Flask==3.0.0
 python-binance==1.0.19
 requests==2.31.0
+python-dotenv==1.0.0
 
 # Optional: for testing
 # pytest==7.4.3

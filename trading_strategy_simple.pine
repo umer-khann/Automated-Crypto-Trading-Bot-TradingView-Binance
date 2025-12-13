@@ -1,0 +1,62 @@
+//@version=5
+strategy("Automated Trading Bot Strategy - SIMPLE TEST", overlay=true, initial_capital=10000, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
+
+// ============================================================================
+// SIMPLIFIED VERSION FOR TESTING
+// This version generates signals more frequently for testing webhooks
+// ============================================================================
+
+// INPUT PARAMETERS
+rsi_length = input.int(14, title="RSI Length", minval=1)
+rsi_overbought = input.int(70, title="RSI Overbought", minval=50, maxval=100)
+rsi_oversold = input.int(30, title="RSI Oversold", minval=0, maxval=50)
+
+ema_fast = input.int(12, title="Fast EMA", minval=1)
+ema_slow = input.int(26, title="Slow EMA", minval=1)
+
+// TECHNICAL INDICATORS
+rsi = ta.rsi(close, rsi_length)
+ema_fast_line = ta.ema(close, ema_fast)
+ema_slow_line = ta.ema(close, ema_slow)
+
+// ============================================================================
+// SIMPLIFIED SIGNAL CONDITIONS (FOR TESTING)
+// ============================================================================
+
+// Buy Signal: Fast EMA crosses above Slow EMA OR RSI is oversold
+buy_signal = ta.crossover(ema_fast_line, ema_slow_line) or rsi < rsi_oversold
+
+// Sell Signal: Fast EMA crosses below Slow EMA OR RSI is overbought
+sell_signal = ta.crossunder(ema_fast_line, ema_slow_line) or rsi > rsi_overbought
+
+// ============================================================================
+// STRATEGY EXECUTION
+// ============================================================================
+
+if (buy_signal)
+    strategy.entry("Long", strategy.long, comment="Buy Signal")
+    
+if (sell_signal)
+    strategy.close("Long", comment="Sell Signal")
+
+// ============================================================================
+// PLOTTING
+// ============================================================================
+
+plot(ema_fast_line, color=color.blue, title="Fast EMA", linewidth=2)
+plot(ema_slow_line, color=color.red, title="Slow EMA", linewidth=2)
+
+plotshape(buy_signal, style=shape.triangleup, location=location.belowbar, color=color.green, size=size.small, title="Buy Signal")
+plotshape(sell_signal, style=shape.triangledown, location=location.abovebar, color=color.red, size=size.small, title="Sell Signal")
+
+// ============================================================================
+// ALERT CONDITIONS
+// ============================================================================
+
+// Alert message with JSON payload
+if (buy_signal)
+    alert('{"signal": "buy", "symbol": "' + syminfo.ticker + '", "price": ' + str.tostring(close) + ', "time": "' + str.tostring(time) + '"}', alert.freq_once_per_bar)
+
+if (sell_signal)
+    alert('{"signal": "sell", "symbol": "' + syminfo.ticker + '", "price": ' + str.tostring(close) + ', "time": "' + str.tostring(time) + '"}', alert.freq_once_per_bar)
+

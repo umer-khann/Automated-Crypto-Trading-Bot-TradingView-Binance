@@ -142,17 +142,36 @@
                 </div>
             </section>
 
-            <!-- Logs Section -->
-            <section class="logs-section">
+            <!-- Webhook Activity Monitor -->
+            <section class="activity-section">
                 <div class="section-header">
-                    <h2><i class="fas fa-file-alt"></i> Recent Logs</h2>
+                    <h2><i class="fas fa-broadcast-tower"></i> Webhook Activity Monitor</h2>
                     <button class="btn btn-secondary" onclick="toggleAutoRefresh()">
                         <i class="fas fa-play" id="auto-refresh-icon"></i> 
                         <span id="auto-refresh-text">Auto-refresh: OFF</span>
                     </button>
                 </div>
+                <div class="activity-container" id="activity-container">
+                    <div class="activity-item">
+                        <div class="activity-icon info"><i class="fas fa-info-circle"></i></div>
+                        <div class="activity-content">
+                            <div class="activity-title">Waiting for webhook activity...</div>
+                            <div class="activity-time">Monitor will show incoming webhooks and trades here</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Logs Section -->
+            <section class="logs-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-file-alt"></i> Recent Logs</h2>
+                    <button class="btn btn-secondary" onclick="loadLogs()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
                 <div class="logs-container" id="logs-container">
-                    <div class="log-entry">Waiting for logs...</div>
+                    <div class="log-entry">Check server console or trading_bot.log for detailed logs</div>
                 </div>
             </section>
         </main>
