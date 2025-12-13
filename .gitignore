@@ -28,11 +28,11 @@ wheels/
 config.env
 
 # Logs
-*.log
-trading_bot.log
+#*.log
+#trading_bot.log
 
 # Trade history
-trade_history.csv
+#trade_history.csv
 
 # IDE
 .vscode/
