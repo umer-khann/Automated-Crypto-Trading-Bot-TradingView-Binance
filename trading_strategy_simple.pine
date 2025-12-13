@@ -54,9 +54,11 @@ plotshape(sell_signal, style=shape.triangledown, location=location.abovebar, col
 // ============================================================================
 
 // Alert message with JSON payload
-if (buy_signal)
+// Fire alert on bar close when signal is true (most reliable)
+// Using barstate.isconfirmed ensures alert fires once per completed bar
+if (barstate.isconfirmed and buy_signal)
     alert('{"signal": "buy", "symbol": "' + syminfo.ticker + '", "price": ' + str.tostring(close) + ', "time": "' + str.tostring(time) + '"}', alert.freq_once_per_bar)
 
-if (sell_signal)
+if (barstate.isconfirmed and sell_signal)
     alert('{"signal": "sell", "symbol": "' + syminfo.ticker + '", "price": ' + str.tostring(close) + ', "time": "' + str.tostring(time) + '"}', alert.freq_once_per_bar)
 
