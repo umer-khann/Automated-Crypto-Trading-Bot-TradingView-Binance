@@ -23,11 +23,40 @@ ema_slow_line = ta.ema(close, ema_slow)
 // SIMPLIFIED SIGNAL CONDITIONS (FOR TESTING)
 // ============================================================================
 
-// Buy Signal: Fast EMA crosses above Slow EMA OR RSI is oversold
-buy_signal = ta.crossover(ema_fast_line, ema_slow_line) or rsi < rsi_oversold
+// Buy Signal: Fast EMA crosses above Slow EMA OR RSI crosses below oversold level
+// Using ta.crossunder for RSI ensures it only triggers once when RSI enters oversold zone
+ema_buy = ta.crossover(ema_fast_line, ema_slow_line)
+rsi_buy = ta.crossunder(rsi, rsi_oversold)  // RSI crosses below 30 (enters oversold)
+buy_condition = ema_buy or rsi_buy
 
-// Sell Signal: Fast EMA crosses below Slow EMA OR RSI is overbought
-sell_signal = ta.crossunder(ema_fast_line, ema_slow_line) or rsi > rsi_overbought
+// Sell Signal: Fast EMA crosses below Slow EMA OR RSI crosses above overbought level
+// Using ta.crossover for RSI ensures it only triggers once when RSI enters overbought zone
+ema_sell = ta.crossunder(ema_fast_line, ema_slow_line)
+rsi_sell = ta.crossover(rsi, rsi_overbought)  // RSI crosses above 70 (enters overbought)
+sell_condition = ema_sell or rsi_sell
+
+// Prevent both signals on same bar - prioritize based on conditions
+// If both conditions true, prioritize the stronger signal
+bool buy_signal = false
+bool sell_signal = false
+
+if (buy_condition and sell_condition)
+    // If both true, check which is stronger
+    // Prioritize EMA crossover over RSI (more reliable trend signal)
+    if (ema_buy)
+        buy_signal := true
+        sell_signal := false
+    else if (ema_sell)
+        buy_signal := false
+        sell_signal := true
+    else
+        // Both RSI conditions - prioritize oversold (buy) over overbought (sell)
+        buy_signal := rsi_buy
+        sell_signal := false
+else
+    // Normal case - only one condition true
+    buy_signal := buy_condition
+    sell_signal := sell_condition
 
 // ============================================================================
 // STRATEGY EXECUTION
@@ -54,11 +83,42 @@ plotshape(sell_signal, style=shape.triangledown, location=location.abovebar, col
 // ============================================================================
 
 // Alert message with JSON payload
-// Fire alert on bar close when signal is true (most reliable)
-// Using barstate.isconfirmed ensures alert fires once per completed bar
-if (barstate.isconfirmed and buy_signal)
-    alert('{"signal": "buy", "symbol": "' + syminfo.ticker + '", "price": ' + str.tostring(close) + ', "time": "' + str.tostring(time) + '"}', alert.freq_once_per_bar)
+// Fire alert on bar close if signal occurred during the bar
+// Store signal state to catch crossovers that happened during the bar
+var bool signal_occurred_buy = false
+var bool signal_occurred_sell = false
 
-if (barstate.isconfirmed and sell_signal)
-    alert('{"signal": "sell", "symbol": "' + syminfo.ticker + '", "price": ' + str.tostring(close) + ', "time": "' + str.tostring(time) + '"}', alert.freq_once_per_bar)
+// Track if signal happened during current bar
+if (buy_signal)
+    signal_occurred_buy := true
+
+if (sell_signal)
+    signal_occurred_sell := true
+
+// Fire alert on bar close if signal occurred
+// IMPORTANT: Only fire ONE signal per bar to prevent buy/sell on same bar
+if (barstate.isconfirmed)
+    if (signal_occurred_buy and not signal_occurred_sell)
+        // Only buy signal occurred
+        alert('{"signal": "buy", "symbol": "' + syminfo.ticker + '", "price": ' + str.tostring(close) + ', "time": "' + str.tostring(time) + '"}', alert.freq_once_per_bar)
+        signal_occurred_buy := false  // Reset for next bar
+        signal_occurred_sell := false
+    else if (signal_occurred_sell and not signal_occurred_buy)
+        // Only sell signal occurred
+        alert('{"signal": "sell", "symbol": "' + syminfo.ticker + '", "price": ' + str.tostring(close) + ', "time": "' + str.tostring(time) + '"}', alert.freq_once_per_bar)
+        signal_occurred_buy := false
+        signal_occurred_sell := false  // Reset for next bar
+    else if (signal_occurred_buy and signal_occurred_sell)
+        // Both signals occurred - prioritize based on signal logic
+        // Use the final buy_signal/sell_signal state (already prioritized in signal logic)
+        if (buy_signal)
+            alert('{"signal": "buy", "symbol": "' + syminfo.ticker + '", "price": ' + str.tostring(close) + ', "time": "' + str.tostring(time) + '"}', alert.freq_once_per_bar)
+        else if (sell_signal)
+            alert('{"signal": "sell", "symbol": "' + syminfo.ticker + '", "price": ' + str.tostring(close) + ', "time": "' + str.tostring(time) + '"}', alert.freq_once_per_bar)
+        signal_occurred_buy := false
+        signal_occurred_sell := false  // Reset for next bar
+    else
+        // No signals - just reset
+        signal_occurred_buy := false
+        signal_occurred_sell := false
 

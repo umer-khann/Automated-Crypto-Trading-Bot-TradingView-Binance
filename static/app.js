@@ -322,7 +322,9 @@ async function testWebhook() {
 // ============================================================================
 
 function refreshBalance() {
-    const btn = event.target;
+    // Get the button element (not the icon or text inside it)
+    const btn = event.target.closest('button') || event.target;
+    const originalContent = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
     loadBalance().finally(() => {
         btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
@@ -330,7 +332,9 @@ function refreshBalance() {
 }
 
 function refreshHistory() {
-    const btn = event.target;
+    // Get the button element (not the icon or text inside it)
+    const btn = event.target.closest('button') || event.target;
+    const originalContent = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
     loadTradeHistory().finally(() => {
         btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
